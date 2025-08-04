@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import sys
 
 from pocketflow import Context, Params
 from nodes import (
