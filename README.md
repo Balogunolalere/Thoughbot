@@ -1,180 +1,126 @@
-# Self-Critique Loop Implementation
+# Nodex - AI Reasoning, Search, and Scraping Framework
 
-This project implements a self-critique loop for chain-of-thought reasoning, automatically inserting verification steps after each completed task and handling verification failures with corrective actions.
+This project implements a flexible framework for AI reasoning combined with web search and content scraping capabilities. It uses Large Language Models (LLMs) to solve problems through chain-of-thought reasoning while integrating with search engines and web scraping to gather and process information.
 
 ## Key Features
 
-### 🔍 Automatic Verification Insertion
-- **After every "Done" leaf node**: The system automatically inserts a verification step
-- **Depth limiting**: Prevents infinite verification recursion by limiting to 3 levels
-- **Smart detection**: Only adds verification to leaf nodes that don't already have sub-steps
+### 🔍 Chain-of-Thought Reasoning
+- **Structured Problem Solving**: Breaks down complex problems into logical steps
+- **Self-Looping Architecture**: Continues reasoning until a solution is found
+- **Plan Tracking**: Maintains detailed plan states with statuses (Pending, Done, Verification Needed, Search Needed)
+- **LLM Integration**: Uses Google's Gemini API for intelligent reasoning
 
-### ⚠️ Verification Failure Handling
-- **Automatic detection**: Identifies when verification fails based on result content
-- **Rollback mechanism**: Marks failed steps back to "Pending" status  
-- **Corrective actions**: Automatically adds corrective sub-steps to address issues
-- **Clear marking**: Adds helpful marks to indicate verification failures
+### 🔎 Web Search Integration
+- **Qwant Search**: Integrated with Qwant search API for privacy-focused web search
+- **Automatic Search**: Chain-of-thought nodes can automatically request and perform web searches
+- **Search Result Integration**: Search results are automatically incorporated into the reasoning process
 
-### 🔄 Self-Critique Workflow
+### 🕵️ Content Scraping
+- **Robust Web Scraper**: Extracts content from search result URLs
+- **Content Processing**: Parses HTML and extracts relevant text content
+- **Error Handling**: Comprehensive error handling with retries and timeouts
+- **Content Integration**: Scraped content is automatically incorporated into the reasoning process
 
-```
-[Done] Compute step
-  └── [Verification Needed] Check result against constraints
-       ├── [Done] → "Verification passed" ✅
-       └── [Done] → "Verification failed" ❌
-            └── Triggers: Parent → [Pending] + Add corrective sub-step
-```
+### 📝 Comprehensive Answer Synthesis
+- **Final Answer Generation**: Automatically synthesizes all research into a coherent, comprehensive final answer
+- **Source Compilation**: Automatically compiles and references all sources used
+- **Structured Output**: Produces well-formatted, organized responses
 
-## Implementation Details
-
-### Core Functions
-
-#### `_insert_verification_steps(plan)`
-- Recursively processes the plan tree
-- Inserts verification steps after "Done" leaf nodes
-- Limits verification depth to prevent infinite loops
-- Returns modified plan with verification steps
-
-#### `_handle_verification_failures(plan)`
-- Scans for failed verification steps (containing "failed" in result)
-- Marks parent steps back to "Pending" 
-- Adds corrective sub-steps with specific failure details
-- Preserves failed verification for reference
-
-#### `count_verification_depth(description)`
-- Counts nested "Verify result of" levels in descriptions
-- Used to limit verification depth and prevent recursion
-- Returns integer count of verification nesting
-
-### Usage Examples
-
-#### Basic Usage
-```python
-import asyncio
-from pocketflow import Flow
-from node import ChainOfThoughtNode
-
-async def solve_problem():
-    problem = "Calculate 2 + 2 and verify the result."
-    
-    flow = Flow(ChainOfThoughtNode())
-    flow.edge("continue", ChainOfThoughtNode())
-    
-    ctx = {"problem": problem}
-    result = await flow.run(ctx)
-    return result
-
-# Run with uv
-asyncio.run(solve_problem())
-```
-
-#### Running Demos
-```bash
-# Simple math problem with verification
-uv run python simple_demo.py
-
-# Demo with potential verification failures  
-uv run python failure_demo.py
-
-# Basic verification capabilities
-uv run python demo_verification.py
-
-# Original complex problem
-uv run python flow.py
-```
+### ⚙️ Flow Management
+- **Async Framework**: Custom async flow engine for managing computational graphs
+- **Concurrent Execution**: Supports semaphore-based concurrency control
+- **Extensible Nodes**: Easy to add new types of reasoning nodes
 
 ## Project Structure
 
 ```
-├── node.py              # Core ChainOfThoughtNode with self-critique loop
-├── flow.py              # Main flow execution
-├── pocketflow.py        # Flow framework
-├── utility.py           # LLM utilities and rate limiting
-├── simple_demo.py       # Simple verification demo
-├── failure_demo.py      # Verification failure demo  
-├── demo_verification.py # Basic verification demo
-├── pyproject.toml       # Project dependencies
-└── README.md           # This file
+├── nodes.py              # ChainOfThoughtNode with search and scraping integration
+├── flow.py               # Main flow execution example
+├── pocketflow.py         # Flow framework engine
+├── search.py             # Qwant search integration
+├── scraper.py            # Web scraping functionality
+├── utility.py            # LLM utilities and response parsing
+├── search_demo.py        # Demo showing search and scraping integrated reasoning
+├── test_search.py        # Simple search functionality test
+├── test_scraper.py       # Web scraper functionality test
+├── test_fix.py           # Test for validation error fixes
+├── test_comprehensive.py # Test for comprehensive answer generation
+├── pyproject.toml        # Project dependencies
+└── README.md             # This file
 ```
 
-## Configuration
+## Installation
 
-The system uses JSON format for LLM communication (more robust than YAML) and includes:
-- **Rate limiting**: Built-in rate limiting for Gemini API
-- **Error handling**: Comprehensive error handling with debugging output
-- **Depth limiting**: Configurable verification depth (default: 3 levels)
-- **Environment setup**: Uses `.env` file for API keys
+Install dependencies with uv:
 
-## Dependencies
-
-Install with uv:
 ```bash
 uv sync
 ```
 
-Key dependencies:
-- `google-genai`: For LLM integration
-- `python-dotenv`: Environment variable management  
-- `pyyaml`: Configuration parsing
-- `pytest`: Testing framework
-
 ## API Keys
 
-Create a `.env` file with:
+Create a `.env` file with your Gemini API key:
+
 ```
 GEMINI_API_KEY=your_api_key_here
 ```
 
+## Usage Examples
+
+### Search and Scraping Reasoning Flow
+```bash
+# Run the search and scraping demo (may take several minutes)
+uv run python search_demo.py
+```
+
+### Testing Search Functionality
+```bash
+# Test the Qwant search integration
+uv run python test_search.py
+```
+
+### Testing Scraping Functionality
+```bash
+# Test the web scraper
+uv run python test_scraper.py
+```
+
+### Testing Comprehensive Answer Generation
+```bash
+# Test comprehensive answer generation
+uv run python test_comprehensive.py
+```
+
 ## How It Works
 
-1. **Problem Input**: User provides a problem to solve
-2. **Chain-of-Thought**: System breaks down problem into steps
-3. **Step Execution**: Each step is executed and marked "Done"
-4. **Auto-Verification**: System automatically adds verification steps
-5. **Verification Check**: Each verification examines the parent result
-6. **Failure Handling**: If verification fails, parent goes back to "Pending"
-7. **Corrective Action**: System adds specific corrective sub-steps
-8. **Iteration**: Process continues until all steps pass verification
+1. **Problem Input**: User provides a complex problem to solve
+2. **Chain-of-Thought**: System breaks down the problem into structured steps
+3. **Reasoning Loop**: Each step is processed by the LLM with context from previous steps
+4. **Search Integration**: When information is needed, steps can request web searches
+5. **Automatic Search**: System automatically performs requested searches
+6. **Content Scraping**: System scrapes content from top search results
+7. **Content Integration**: Scraped content is incorporated into the context for reasoning
+8. **Plan Execution**: System executes steps and updates plan status
+9. **Verification**: Critical results can be marked for verification
+10. **Answer Synthesis**: System automatically synthesizes all information into a comprehensive final answer
+11. **Source Compilation**: System compiles and references all sources used
 
-## Example Output
+## Dependencies
 
-```
---- Thought 1 ---
-Creating plan for: Calculate 5 * 3
+Key dependencies:
+- `google-genai`: For LLM integration
+- `python-dotenv`: Environment variable management
+- `pyyaml`: Configuration parsing
+- `requests`: HTTP requests for search APIs
+- `httpx[http2]`: Modern HTTP client for scraping
+- `bs4`: BeautifulSoup for HTML parsing
+- `pytest`: Testing framework
 
-Current plan:
-- [Pending] Calculate the product of 5 and 3
-- [Pending] Verify the result
+## Extending the Framework
 
---- Thought 2 ---  
-Executing calculation step...
-
-Current plan:
-- [Done] Calculate the product of 5 and 3  → 5 * 3 = 15
-  - [Verification Needed] Verify result of 'Calculate the product of 5 and 3'
-- [Pending] Verify the result
-
---- Thought 3 ---
-Performing verification...
-
-Current plan:
-- [Done] Calculate the product of 5 and 3  → 5 * 3 = 15
-  - [Done] Verify result of 'Calculate the product of 5 and 3'  → Verification passed - calculation is correct
-    - [Verification Needed] Verify result of 'Verify result of...'
-```
-
-## Benefits
-
-- **Reliability**: Catches computation errors automatically
-- **Transparency**: Shows complete verification chain  
-- **Self-correction**: Handles failures gracefully with corrective actions
-- **Depth control**: Prevents infinite verification loops
-- **Extensible**: Easy to customize verification criteria
-
-## Future Enhancements
-
-- Custom verification criteria per problem type
-- Parallel verification for independent steps
-- Verification confidence scoring
-- Integration with external validation tools
-- Performance optimization for large problem trees
+The system is designed to be extensible:
+- Add new node types in `nodes.py`
+- Extend search capabilities in `search.py`
+- Enhance scraping in `scraper.py`
+- Modify the flow engine in `pocketflow.py`
+- Improve parsing in `utility.py`
